@@ -1,15 +1,18 @@
-﻿using System;
+﻿using NesEmulator;
+using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace UnitTest
+namespace NesEmulator.Tests
 {
-    [TestClass]
+    [TestClass()]
     public class CPUTest
     {
-        [TestMethod]
-        public void TestMethod1()
+        private RicohCPU cpu = new RicohCPU();
+        [TestMethod()]
+        public void EvalOpCodeTest()
         {
-
+            cpu.EvalImmediate(RicohCPU.OpCode.ADC, 0, 0, 0);
+            Assert.Fail();
         }
     }
 }

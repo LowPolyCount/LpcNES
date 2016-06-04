@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace NesEmulator
 {
 /*
-DC Add with carry. Adds A plus another number, plus the Carry flag, and
+ADC Add with carry. Adds A plus another number, plus the Carry flag, and
 	stores the result in A. The other number (source) can be a constant
 	(ADC #45), an address (ADC 100h) or an indexed address (ADC 100h,X).
 	Since C is added too, you must clear it before with CLC (except when
@@ -314,14 +314,93 @@ TXS Transfer X to S. Stores in S the value of X. This must be used always
 
 TYX Transfer Y to A.
 */
-    class RicohCPU
+    public class RicohCPU
     {
-        private Int16 m_pc = 0;     // program counter
-        private Int16 m_stack = 0;  // stack register  
-        private Int16 m_flagReg;    // flag register
-        private Int16 m_regA;       // accumulator
-        private Int16 m_regX;       // Index Register X
-        private Int16 m_regY;       // Index Register Y
+        public enum OpCode
+        {
+            ADC,
+            AND,
+            ASL,
+            BCC
+        }
+
+        public enum Flags : ushort
+        {
+            Carry = 1 << 0,
+            Zero = 1 << 1,
+            InterruptDisable = 1 << 2,
+            Decimal = 1 << 3,
+            Break = 1 << 4,
+            AlwaysSet = 1 << 5,
+            Overflow = 1 << 6,
+            Negative = 1 << 7
+        }
+
+        public enum Addressing
+        {
+            Immediate
+        }
+
+        private ushort m_pc = 0;         // program counter
+        private ushort m_stack = 0;      // stack register  
+        private ushort m_flagReg = 0;    // flag register - Also called P
+        private ushort m_regA = 0;       // accumulator
+        private ushort m_regX = 0;       // Index Register X
+        private ushort m_regY = 0;       // Index Register Y
+
+        private Addressing m_mode = Addressing.Immediate;   // addressing mode
+        private MainMemory m_memory;     
+
+        public RicohCPU()
+        {
+
+        }
+
+        public void Init(MainMemory InMemory)
+        {
+            m_memory = InMemory;
+            m_flagReg = 0x34;    // irq disabled
+            m_stack = 0xfd;
+            m_regA = m_regX = m_regY = 0;
+        }
+
+        public void Eval(OpCode op, ushort arg1, ushort arg2, ushort arg3)
+        {
+            switch(m_mode)
+            {
+                case Addressing.Immediate:
+                    EvalImmediate(op, arg1, arg2, arg3);
+                    break;
+                default:
+                    throw new System.InvalidOperationException("Addressing Mode not supported:"+m_mode);
+            }
+        }
+
+        private void AddAccumulator(ushort value, bool isCarry)
+        {
+            uint addValue = (uint)value + (uint)m_regA;
+            if (isCarry)
+            {
+                if(addValue > short.MaxValue)
+                {
+                    m_flagReg = (ushort)(m_flagReg | (ushort)Flags.Carry);
+                }
+            }
+            m_regA += (ushort)addValue;
+        }
+
+        // immediate mode 
+        public void EvalImmediate(OpCode op, ushort arg1, ushort arg2, ushort arg3) 
+        {
+            switch(op)
+            {
+                case OpCode.ADC:
+                    AddAccumulator(m_memory.Read(arg1), true);
+                    break;
+                default:
+                    throw new System.InvalidOperationException("In Mode "+m_mode+" OpCode not supported: " + op);
+            }
+        }
 
     }
 }
