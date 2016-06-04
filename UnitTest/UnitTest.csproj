@@ -54,6 +54,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="CPUHandler.cs" />
     <Compile Include="CPUTest.cs" />
     <Compile Include="FileReaderTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

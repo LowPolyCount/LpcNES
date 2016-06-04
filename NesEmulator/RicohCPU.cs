@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 namespace NesEmulator
 {
 /*
+ * http://nesdev.com/6502.txt
 ADC Add with carry. Adds A plus another number, plus the Carry flag, and
 	stores the result in A. The other number (source) can be a constant
 	(ADC #45), an address (ADC 100h) or an indexed address (ADC 100h,X).
@@ -316,12 +317,12 @@ TYX Transfer Y to A.
 */
     public class RicohCPU
     {
-        public enum OpCode
+        public enum OpCodeImmediate : ushort
         {
-            ADC,
-            AND,
-            ASL,
-            BCC
+            ADC = 0x69,
+            AND = 0x29,
+            ASL = 0x0A,
+            BCC = 0x90
         }
 
         public enum Flags : ushort
@@ -336,19 +337,19 @@ TYX Transfer Y to A.
             Negative = 1 << 7
         }
 
-        public enum Addressing
+        public enum AddressingMode
         {
             Immediate
         }
 
-        private ushort m_pc = 0;         // program counter
-        private ushort m_stack = 0;      // stack register  
-        private ushort m_flagReg = 0;    // flag register - Also called P
-        private ushort m_regA = 0;       // accumulator
-        private ushort m_regX = 0;       // Index Register X
-        private ushort m_regY = 0;       // Index Register Y
+        protected ushort m_pc = 0;         // program counter
+        protected ushort m_stack = 0;      // stack register  
+        protected ushort m_flagReg = 0;    // flag register - Also called P
+        protected ushort m_regA = 0;       // accumulator
+        protected ushort m_regX = 0;       // Index Register X
+        protected ushort m_regY = 0;       // Index Register Y
 
-        private Addressing m_mode = Addressing.Immediate;   // addressing mode
+        private AddressingMode m_mode = AddressingMode.Immediate;   // addressing mode
         private MainMemory m_memory;     
 
         public RicohCPU()
@@ -364,12 +365,12 @@ TYX Transfer Y to A.
             m_regA = m_regX = m_regY = 0;
         }
 
-        public void Eval(OpCode op, ushort arg1, ushort arg2, ushort arg3)
+        public void Eval(Operation op)
         {
             switch(m_mode)
             {
-                case Addressing.Immediate:
-                    EvalImmediate(op, arg1, arg2, arg3);
+                case AddressingMode.Immediate:
+                    EvalImmediate(op);
                     break;
                 default:
                     throw new System.InvalidOperationException("Addressing Mode not supported:"+m_mode);
@@ -390,12 +391,12 @@ TYX Transfer Y to A.
         }
 
         // immediate mode 
-        public void EvalImmediate(OpCode op, ushort arg1, ushort arg2, ushort arg3) 
+        public void EvalImmediate(Operation op) 
         {
-            switch(op)
+            switch(op.m_op)
             {
-                case OpCode.ADC:
-                    AddAccumulator(m_memory.Read(arg1), true);
+                case (ushort)OpCodeImmediate.ADC:
+                    AddAccumulator(m_memory.Read(op.m_arg1), true);
                     break;
                 default:
                     throw new System.InvalidOperationException("In Mode "+m_mode+" OpCode not supported: " + op);
