@@ -317,15 +317,24 @@ TYX Transfer Y to A.
 */
     public class RicohCPU
     {
-        public enum OpCodeImmediate : ushort
+        public enum OpCodeImmediate : byte
         {
             ADC = 0x69,
             AND = 0x29,
-            ASL = 0x0A,
-            BCC = 0x90
+            ASL = 0x0A, //@todo, not handled in Immediate mode
+            LDA = 0xA9,
+            CMP = 0xC9,
+            CPX = 0xE0,
+            CPY = 0xC0,
+            EOR = 0x49,
+            LDX = 0xA2,
+            LDY = 0xA0,
+            ORA = 0x09,
+            SBC = 0xe9,
+
         }
 
-        public enum Flags : ushort
+        public enum Flags : byte
         {
             Carry = 1 << 0,
             Zero = 1 << 1,
@@ -334,7 +343,7 @@ TYX Transfer Y to A.
             Break = 1 << 4,
             AlwaysSet = 1 << 5,
             Overflow = 1 << 6,
-            Negative = 1 << 7
+            Sign = 1 << 7
         }
 
         public enum AddressingMode
@@ -342,15 +351,15 @@ TYX Transfer Y to A.
             Immediate
         }
 
-        protected ushort m_pc = 0;         // program counter
-        protected ushort m_stack = 0;      // stack register  
-        protected ushort m_flagReg = 0;    // flag register - Also called P
-        protected ushort m_regA = 0;       // accumulator
-        protected ushort m_regX = 0;       // Index Register X
-        protected ushort m_regY = 0;       // Index Register Y
+        protected byte m_pc = 0;         // program counter
+        protected byte m_stack = 0;      // stack register  
+        protected byte m_flagReg = 0;    // flag register - Also called P
+        protected byte m_regA = 0;       // accumulator
+        protected byte m_regX = 0;       // Index Register X
+        protected byte m_regY = 0;       // Index Register Y
 
         private AddressingMode m_mode = AddressingMode.Immediate;   // addressing mode
-        private MainMemory m_memory;     
+        private MainMemory m_memory = null;
 
         public RicohCPU()
         {
@@ -377,31 +386,102 @@ TYX Transfer Y to A.
             }
         }
 
-        private void AddAccumulator(ushort value, bool isCarry)
-        {
-            uint addValue = (uint)value + (uint)m_regA;
-            if (isCarry)
-            {
-                if(addValue > short.MaxValue)
-                {
-                    m_flagReg = (ushort)(m_flagReg | (ushort)Flags.Carry);
-                }
-            }
-            m_regA += (ushort)addValue;
-        }
-
         // immediate mode 
         public void EvalImmediate(Operation op) 
         {
             switch(op.m_op)
             {
-                case (ushort)OpCodeImmediate.ADC:
-                    AddAccumulator(m_memory.Read(op.m_arg1), true);
+                case (byte)OpCodeImmediate.ADC:
+                    AddAccumulator(op.m_arg1);
+                    //AddAccumulatorMemory(m_memory.Read(op.m_arg1), true);
+                    break;
+                case (byte)OpCodeImmediate.AND:
+                    AndAccumulator(op.m_arg1);
+                    break;
+                case (byte)OpCodeImmediate.LDA:
+                    LoadAccumulator(op.m_arg1);
+                    break;
+                case (byte)OpCodeImmediate.ASL:   //@todo: not supported in immediate mode
+                    LeftShiftAccumulator();
+                    break;
+                case (byte)OpCodeImmediate.CMP:
+                    CompareAccumulator(op.m_arg1);
                     break;
                 default:
+
                     throw new System.InvalidOperationException("In Mode "+m_mode+" OpCode not supported: " + op);
             }
         }
 
+        private void SetFlag(Flags flag, bool value)
+        {
+            if(value)
+            {
+                m_flagReg = (byte)((int)m_flagReg | (int)flag);
+            }
+            else
+            {
+                m_flagReg = (byte)((int)m_flagReg & (int)~flag);
+            }
+        }
+
+        private bool GetFlag(Flags flag)
+        {
+            return ((int)m_flagReg & (int)flag) == 1;
+        }
+
+        private void LoadAccumulator(byte value)
+        {
+            m_regA = value;
+        }
+
+        private void AndAccumulator(byte value)
+        {
+            m_regA = (byte)(m_regA & value);
+        }
+
+        private void LeftShiftAccumulator()
+        {
+            m_regA = (byte)(m_regA << 1);
+        }
+
+        private void SetCarry(bool value)
+        {
+            int intValue = Convert.ToInt32(value);
+            m_flagReg = (byte)(m_flagReg ^ (-intValue ^ (int)m_flagReg) & (int)Flags.Carry);
+        }
+
+        private void SetSign(bool value)
+        {
+            int intValue = Convert.ToInt32(value);
+            m_flagReg = (byte)(m_flagReg ^ (-intValue ^ (int)m_flagReg) & (int)Flags.Sign);
+        }
+
+        private void SetZero(bool value)
+        {
+            int intValue = Convert.ToInt32(value);
+            m_flagReg = (byte)(m_flagReg ^ (-intValue ^ (int)m_flagReg) & (int)Flags.Zero);
+        }
+
+        private void SetFlagsCompare(int comResult)
+        {
+            SetCarry(comResult > byte.MaxValue);
+            SetSign(comResult < 0);
+            SetZero(comResult == 0);
+        }
+
+        private void CompareAccumulator(byte value)
+        {
+            byte memValue = m_memory.Read(value);
+            int comResult = Convert.ToInt32(m_regA - memValue);
+            SetFlagsCompare(comResult);
+        }
+
+        private void AddAccumulator(byte value)
+        {
+            int addValue = Convert.ToInt32(value + m_regA);
+            SetFlagsCompare(addValue);
+            m_regA += (byte)addValue;
+        }
     }
 }

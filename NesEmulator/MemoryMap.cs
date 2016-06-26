@@ -31,7 +31,7 @@ namespace NesEmulator
         }
 
         private MemoryLocation[] m_memoryMapLocations = new MemoryLocation[(int)MemoryMap.MaxSize];
-        const uint kMemSize = 2048;  // in bytes
+        const uint kMemSize = 65536;  // in bytes
 
         byte[] m_mainMemory = new byte[kMemSize];
 
@@ -56,7 +56,7 @@ namespace NesEmulator
             }
         }
 
-        public void Write(ushort address, byte value)
+        public void Write(byte address, byte value)
         {
             if (CheckAddress(address))
             {
@@ -64,7 +64,7 @@ namespace NesEmulator
             }
         }
 
-        public byte Read(ushort address)
+        public byte Read(byte address)
         {
             if(CheckAddress(address))
             {

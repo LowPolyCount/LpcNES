@@ -8,12 +8,12 @@ namespace NesEmulator
 {
     public class Operation
     {
-        public ushort m_op = 0;
-        public ushort m_arg1 = 0;
-        public ushort m_arg2 = 0;
-        public ushort m_arg3 = 0;
+        public byte m_op = 0;
+        public byte m_arg1 = 0;
+        public byte m_arg2 = 0;
+        public byte m_arg3 = 0;
 
-        public Operation(ushort op, ushort arg1, ushort arg2, ushort arg3)
+        public Operation(byte op, byte arg1, byte arg2, byte arg3)
         {
             m_op = op;
             m_arg1 = arg1;
