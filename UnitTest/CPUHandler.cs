@@ -9,6 +9,7 @@ namespace NesEmulator.Tests
 {
     class CPUHandler : RicohCPU
     {
+        public delegate byte ReturnRegister();
         public byte GetPc() { return m_pc; }     // program counter
         public byte GetStack() { return m_stack; }  // stack register  
         public byte GetFlagReg() { return m_flagReg; }    // flag register
